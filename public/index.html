@@ -378,7 +378,7 @@
                     text = text.split('```')[1].split('```')[0];
                 }
 
-                const result = JSON.parse(text.trim());
+                const parsedData = JSON.parse(text.trim());
 
                 // Firestore에 저장
                 const batch = db.batch();
@@ -388,7 +388,7 @@
                 existing.forEach(doc => batch.delete(doc.ref));
 
                 // 새 topics 추가
-                result.topics.forEach(topic => {
+                parsedData.topics.forEach(topic => {
                     const ref = db.collection('topics').doc();
                     batch.set(ref, {
                         ...topic,
