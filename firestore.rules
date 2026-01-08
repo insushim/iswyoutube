@@ -5,9 +5,24 @@ service cloud.firestore {
     match /projects/{projectId} {
       allow read, write: if true;
     }
-    
+
     // Videos collection
     match /videos/{videoId} {
+      allow read, write: if true;
+    }
+
+    // Topics collection (AI 추천 주제)
+    match /topics/{topicId} {
+      allow read, write: if true;
+    }
+
+    // Scripts collection (생성된 스크립트)
+    match /scripts/{scriptId} {
+      allow read, write: if true;
+    }
+
+    // Settings collection (설정)
+    match /settings/{settingId} {
       allow read, write: if true;
     }
   }
