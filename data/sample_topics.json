@@ -1,0 +1,52 @@
+[
+  {
+    "topic": "양자역학 입문: 슈뢰딩거의 고양이 이해하기",
+    "category": "science",
+    "style": "kurzgesagt"
+  },
+  {
+    "topic": "블랙홀의 비밀: 사건의 지평선 너머",
+    "category": "space",
+    "style": "kurzgesagt"
+  },
+  {
+    "topic": "인공지능의 미래: 2030년 예측",
+    "category": "technology",
+    "style": "veritasium"
+  },
+  {
+    "topic": "고대 로마의 멸망: 5가지 핵심 원인",
+    "category": "history",
+    "style": "knowledge_pirate"
+  },
+  {
+    "topic": "뇌과학이 밝힌 습관의 비밀",
+    "category": "psychology",
+    "style": "vsauce"
+  },
+  {
+    "topic": "암호화폐와 블록체인: 쉽게 이해하기",
+    "category": "technology",
+    "style": "3blue1brown"
+  },
+  {
+    "topic": "기후변화: 과학이 말하는 진실",
+    "category": "nature",
+    "style": "kurzgesagt"
+  },
+  {
+    "topic": "수면의 과학: 왜 우리는 잠을 자야 할까",
+    "category": "health",
+    "style": "veritasium"
+  },
+  {
+    "topic": "빅뱅 이전에는 무엇이 있었을까",
+    "category": "space",
+    "style": "vsauce"
+  },
+  {
+    "topic": "행동경제학: 왜 우리는 비합리적인 결정을 내릴까",
+    "category": "economics",
+    "style": "knowledge_pirate"
+  }
+]

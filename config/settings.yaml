@@ -1,0 +1,817 @@
+# ============================================
+# YouTube Knowledge Video Generator V2.0
+# 완전한 설정 파일
+# ============================================
+
+project:
+  name: "AI Knowledge Video Generator"
+  version: "2.0.0"
+  environment: "production"  # development, staging, production
+  language: "ko"
+  timezone: "Asia/Seoul"
+  output_dir: "./output"
+  cache_dir: "./data/cache"
+  log_level: "INFO"
+  max_concurrent_tasks: 3
+
+# ============================================
+# 채널 설정
+# ============================================
+channel:
+  name: "지식 채널"
+  handle: "@knowledge-channel"
+  default_language: "ko"
+  supported_languages: ["ko", "en", "ja", "zh", "es"]
+  category: "Education"
+
+  branding:
+    primary_color: "#FF6B6B"
+    secondary_color: "#4ECDC4"
+    accent_color: "#45B7D1"
+    background_color: "#1A1A2E"
+    text_color: "#FFFFFF"
+    font_family: "Pretendard"
+    logo_path: "assets/images/logo.png"
+    watermark_path: "assets/images/watermark.png"
+    watermark_opacity: 0.3
+    watermark_position: "bottom_right"
+
+# ============================================
+# 콘텐츠 스타일 프리셋
+# ============================================
+style_presets:
+  kurzgesagt:
+    description: "미니멀 플랫 애니메이션, 낙관적 허무주의"
+    visual:
+      style: "flat_animation"
+      color_palette: "pastel"
+      animation_style: "smooth"
+      character_style: "simple_geometric"
+    narration:
+      tone: "philosophical"
+      speed: 1.0
+      pause_style: "thoughtful"
+    script:
+      structure: "cosmic_perspective"
+      humor_level: 0.3
+      complexity: "medium"
+
+  knowledge_pirate:
+    description: "친근한 스토리텔링, 역사/유래 중심"
+    visual:
+      style: "illustrated"
+      color_palette: "warm"
+      animation_style: "dynamic"
+      character_style: "cartoon"
+    narration:
+      tone: "friendly"
+      speed: 1.05
+      pause_style: "dramatic"
+    script:
+      structure: "storytelling"
+      humor_level: 0.5
+      complexity: "low"
+
+  veritasium:
+    description: "실험/데모 기반, 과학 오해 파헤치기"
+    visual:
+      style: "documentary"
+      color_palette: "neutral"
+      animation_style: "minimal"
+      character_style: "realistic"
+    narration:
+      tone: "curious"
+      speed: 1.0
+      pause_style: "questioning"
+    script:
+      structure: "myth_busting"
+      humor_level: 0.2
+      complexity: "high"
+
+  infographic:
+    description: "데이터 중심, 인포그래픽 애니메이션"
+    visual:
+      style: "infographic"
+      color_palette: "vibrant"
+      animation_style: "data_driven"
+      character_style: "icon_based"
+    narration:
+      tone: "informative"
+      speed: 1.1
+      pause_style: "numbered"
+    script:
+      structure: "listicle"
+      humor_level: 0.2
+      complexity: "medium"
+
+  crash_course:
+    description: "빠른 템포, 미니 코스 형식"
+    visual:
+      style: "educational"
+      color_palette: "colorful"
+      animation_style: "energetic"
+      character_style: "host_focused"
+    narration:
+      tone: "enthusiastic"
+      speed: 1.2
+      pause_style: "quick"
+    script:
+      structure: "course"
+      humor_level: 0.4
+      complexity: "medium"
+
+  oversimplified:
+    description: "역사 단순화, 유머러스 애니메이션"
+    visual:
+      style: "simple_animation"
+      color_palette: "muted"
+      animation_style: "comedic"
+      character_style: "stick_figure"
+    narration:
+      tone: "humorous"
+      speed: 1.1
+      pause_style: "comedic_timing"
+    script:
+      structure: "narrative"
+      humor_level: 0.7
+      complexity: "low"
+
+# ============================================
+# 영상 설정
+# ============================================
+video:
+  # 기본 설정
+  default_resolution: "1920x1080"
+  fps: 30
+  codec: "libx264"
+  audio_codec: "aac"
+  bitrate: "8M"
+  preset: "medium"  # ultrafast, fast, medium, slow
+
+  # 길이 설정
+  duration:
+    target: 600        # 10분
+    minimum: 300       # 5분
+    maximum: 1200      # 20분
+    shorts_max: 60     # Shorts 최대 60초
+    shorts_optimal: 30 # Shorts 최적 30초
+
+  # 인트로/아웃트로
+  intro:
+    enabled: true
+    duration: 5
+    template: "default"
+    skip_for_shorts: true
+
+  outro:
+    enabled: true
+    duration: 20
+    template: "subscribe_cta"
+    include_end_screen: true
+
+  # 챕터
+  chapters:
+    auto_generate: true
+    minimum_duration: 30
+    include_timestamps: true
+    format: "00:00 - 제목"
+
+  # 엔드 스크린
+  end_screen:
+    enabled: true
+    duration: 20
+    elements:
+      - type: "subscribe"
+        position: "left"
+      - type: "video"
+        position: "right"
+        auto_select: true
+
+  # 카드
+  cards:
+    auto_insert: true
+    max_cards: 5
+    types: ["video", "playlist", "channel"]
+    timing_strategy: "engagement_dips"
+
+# ============================================
+# 오디오 설정
+# ============================================
+audio:
+  # TTS 설정
+  tts:
+    provider: "elevenlabs"  # elevenlabs, openai, google, azure, naver
+    model: "eleven_multilingual_v2"
+    fallback_provider: "openai"
+
+    voices:
+      ko:
+        male: "nPczCjzI2devNBz1zQrb"
+        female: "EXAVITQu4vr4xnSDxMaL"
+      en:
+        male: "pNInz6obpgDQGcFmaJgB"
+        female: "21m00Tcm4TlvDq8ikWAM"
+      ja:
+        male: "AZnzlk1XvdvUeBnXmlld"
+        female: "jBpfuIE2acCO8z3wKNLl"
+      zh:
+        male: "g5CIjZEefAph4nQFvHAz"
+        female: "MF3mGyEYCl7XYWbV9V6O"
+      es:
+        male: "ErXwobaYiN019PkySvjV"
+        female: "EXAVITQu4vr4xnSDxMaL"
+
+    settings:
+      stability: 0.5
+      similarity_boost: 0.8
+      style: 0.0
+      speed: 1.0
+
+  # 음성 복제
+  voice_cloning:
+    enabled: false
+    sample_path: ""
+    min_samples: 3
+
+  # BGM 설정
+  bgm:
+    enabled: true
+    auto_select: true
+    volume: 0.15
+    fade_in: 2.0
+    fade_out: 3.0
+
+    ducking:
+      enabled: true
+      threshold: -20
+      reduction: 0.3
+      attack: 0.1
+      release: 0.5
+
+    categories:
+      history: ["epic", "orchestral", "ambient"]
+      science: ["electronic", "ambient", "minimal"]
+      economy: ["corporate", "minimal", "upbeat"]
+
+  # 효과음
+  sfx:
+    enabled: true
+    volume: 0.3
+    auto_add: true
+    categories:
+      - "transition"
+      - "emphasis"
+      - "notification"
+      - "whoosh"
+      - "impact"
+
+  # 오디오 처리
+  processing:
+    normalize: true
+    target_lufs: -14
+    denoise: true
+    compress: true
+    eq_enhance: true
+    sample_rate: 44100
+    bit_depth: 16
+
+# ============================================
+# 비주얼 설정
+# ============================================
+visual:
+  # 이미지 생성
+  image_generation:
+    provider: "dalle3"  # dalle3, midjourney, stable_diffusion, flux
+    model: "dall-e-3"
+    fallback_provider: "stable_diffusion"
+    quality: "hd"
+    size: "1792x1024"
+    style_preset: "vivid"
+
+    batch_size: 5
+    max_concurrent: 3
+    retry_count: 3
+
+  # Stable Diffusion 설정
+  stable_diffusion:
+    model: "stable-diffusion-xl-1024-v1-0"
+    steps: 30
+    cfg_scale: 7
+    sampler: "DPM++ 2M Karras"
+
+  # 애니메이션
+  animation:
+    engine: "moviepy"  # moviepy, after_effects, remotion
+    default_duration: 3.0
+    transition_duration: 0.5
+
+    effects:
+      ken_burns:
+        enabled: true
+        zoom_ratio: 0.04
+        direction: "random"
+      parallax:
+        enabled: true
+        layers: 3
+        depth: 0.1
+      particle:
+        enabled: false
+        type: "dust"
+
+  # 인포그래픽
+  infographic:
+    chart_library: "plotly"  # plotly, matplotlib, chartjs
+    map_library: "folium"
+    style: "modern"
+    color_scheme: "auto"  # auto follows branding
+
+  # 자막
+  subtitle:
+    enabled: true
+    style: "modern"
+    font: "Pretendard"
+    font_size: 48
+    position: "bottom"
+    margin_bottom: 50
+    max_chars_per_line: 40
+
+    background:
+      enabled: true
+      color: "#000000"
+      opacity: 0.7
+      padding: 10
+      border_radius: 5
+
+    outline:
+      enabled: true
+      width: 2
+      color: "#000000"
+
+    animation: "fade"  # none, fade, slide, typewriter
+    highlight_keywords: true
+
+# ============================================
+# 썸네일 설정
+# ============================================
+thumbnail:
+  size: [1280, 720]
+  format: "png"
+  quality: 95
+
+  generation:
+    count: 3  # A/B 테스트용
+    styles: ["dramatic", "clean", "colorful"]
+    auto_select_best: true
+
+  elements:
+    text:
+      enabled: true
+      max_chars: 10
+      font: "Pretendard-Bold"
+      position: "center_bottom"
+      shadow: true
+      outline: true
+
+    face:
+      enabled: false
+      expression: "surprised"
+      position: "right"
+
+    emoji:
+      enabled: true
+      max_count: 2
+      size: 100
+
+    logo:
+      enabled: true
+      position: "top_left"
+      size: 80
+
+  effects:
+    gradient_overlay: true
+    vignette: true
+    contrast_boost: 1.2
+    saturation_boost: 1.1
+    blur_background: false
+
+  ab_testing:
+    enabled: true
+    test_duration_days: 7
+    min_impressions: 1000
+    significance_threshold: 0.95
+
+# ============================================
+# 다국어/현지화 설정
+# ============================================
+localization:
+  enabled: true
+  target_languages: ["en", "ja", "zh", "es"]
+
+  translation:
+    provider: "anthropic"  # anthropic, google, deepl
+    preserve_tone: true
+    cultural_adaptation: true
+    glossary_enabled: true
+
+  dubbing:
+    enabled: true
+    provider: "elevenlabs"
+    voice_matching: true
+    emotion_preservation: true
+
+    lip_sync:
+      enabled: true
+      provider: "wav2lip"
+      quality: "high"
+
+  subtitle:
+    burn_in: false
+    separate_tracks: true
+    auto_timing_adjust: true
+
+  thumbnail:
+    localize_text: true
+    regenerate_images: false
+    cultural_adapt_colors: true
+
+  seo:
+    localize_title: true
+    localize_description: true
+    localize_tags: true
+    local_keywords: true
+
+# ============================================
+# Shorts 설정
+# ============================================
+shorts:
+  enabled: true
+
+  generation:
+    auto_extract: true
+    from_highlights: true
+    standalone: true
+    count_per_video: 3
+
+  format:
+    resolution: "1080x1920"
+    max_duration: 60
+    optimal_duration: 30
+    aspect_ratio: "9:16"
+    fps: 30
+
+  optimization:
+    hook_duration: 3
+    text_overlay: true
+    trending_audio: false
+    auto_captions: true
+    caption_style: "bold_center"
+
+  content:
+    extract_best_moments: true
+    create_teasers: true
+    create_tips: true
+
+  schedule:
+    frequency: 3  # 주당 업로드 수
+    best_times: ["12:00", "18:00", "21:00"]
+    spread_uploads: true
+
+# ============================================
+# 시리즈 자동화 설정
+# ============================================
+series:
+  enabled: true
+
+  planning:
+    auto_generate_episodes: true
+    episode_count: 10
+    continuity_check: true
+    storyline_tracking: true
+
+  features:
+    recap_intro: true
+    recap_duration: 30
+    cliffhanger_outro: true
+    cross_references: true
+    playlist_auto_create: true
+    episode_numbering: true
+
+  scheduling:
+    release_pattern: "weekly"  # daily, weekly, biweekly
+    day_of_week: "saturday"
+    time: "18:00"
+    buffer_episodes: 2
+
+# ============================================
+# 업로드 설정
+# ============================================
+upload:
+  youtube:
+    enabled: true
+    default_privacy: "private"  # private, unlisted, public
+    auto_publish: false
+    schedule_enabled: true
+
+    defaults:
+      category_id: "27"  # Education
+      made_for_kids: false
+      language: "ko"
+      license: "youtube"
+      embeddable: true
+
+    monetization:
+      enable_ads: true
+      mid_roll_ads: true
+
+  cross_platform:
+    tiktok:
+      enabled: true
+      auto_convert: true
+      add_watermark: false
+    instagram:
+      enabled: true
+      reels: true
+      feed: false
+      stories: true
+    facebook:
+      enabled: false
+      reels: true
+    twitter:
+      enabled: false
+    bilibili:
+      enabled: false
+
+  scheduling:
+    optimal_time_analysis: true
+    timezone: "Asia/Seoul"
+
+    default_times:
+      weekday: "18:00"
+      weekend: "14:00"
+
+    best_days: ["saturday", "sunday", "wednesday"]
+    avoid_times: ["02:00-06:00"]
+
+# ============================================
+# 커뮤니티 관리 설정
+# ============================================
+community:
+  comments:
+    auto_respond:
+      enabled: true
+      response_delay: 300  # 5분
+      max_responses_per_hour: 20
+
+    response_rules:
+      respond_to_positive: true
+      respond_to_questions: true
+      respond_to_negative: false
+      respond_to_suggestions: true
+
+    sentiment_filter:
+      enabled: true
+      min_sentiment: -0.3
+
+    spam_filter:
+      enabled: true
+      auto_hide: true
+      keywords_blacklist: []
+
+    moderation:
+      auto_pin_best: true
+      creator_heart: true
+      feature_top_fans: true
+
+  posts:
+    auto_create:
+      enabled: true
+      frequency: "weekly"
+      types: ["poll", "behind_scenes", "qa", "teaser"]
+
+    templates:
+      poll: "다음 영상 주제로 어떤 게 좋을까요?"
+      behind_scenes: "영상 제작 비하인드 스토리"
+      qa: "궁금한 점 있으시면 댓글로 남겨주세요!"
+
+# ============================================
+# 분석 설정
+# ============================================
+analytics:
+  enabled: true
+
+  tracking:
+    views: true
+    watch_time: true
+    engagement: true
+    demographics: true
+    traffic_sources: true
+    revenue: true
+
+  ab_testing:
+    enabled: true
+    thumbnail_test: true
+    title_test: true
+    test_duration_days: 7
+    auto_select_winner: true
+
+  reporting:
+    auto_generate: true
+    frequency: "weekly"
+    export_format: ["pdf", "csv", "json"]
+    email_report: false
+
+  competitor_tracking:
+    enabled: true
+    channels: []
+    metrics: ["views", "growth", "topics", "upload_frequency"]
+
+  predictions:
+    enabled: true
+    view_prediction: true
+    trend_prediction: true
+    revenue_prediction: true
+
+  dashboard:
+    enabled: true
+    realtime: true
+    port: 8080
+    auth_required: false
+
+# ============================================
+# 수익화 설정
+# ============================================
+monetization:
+  ads:
+    enabled: true
+
+    pre_roll: true
+    post_roll: true
+
+    mid_roll:
+      enabled: true
+      min_video_length: 480  # 8분 이상
+      auto_placement: true
+      min_interval: 120  # 최소 2분 간격
+      max_ads: 4
+      placement_strategy: "natural_breaks"
+
+  sponsorship:
+    enabled: true
+    integration_style: "native"
+    disclosure_required: true
+    segment_duration: 60
+    position: "middle"  # beginning, middle, end
+
+  affiliate:
+    enabled: true
+    auto_link_generation: true
+    platforms: ["amazon", "coupang"]
+    link_shortener: true
+
+  membership:
+    enabled: false
+    tiers:
+      - name: "supporter"
+        price: 1990
+        perks: ["early_access", "behind_scenes"]
+      - name: "premium"
+        price: 4990
+        perks: ["all_above", "exclusive_content", "discord"]
+
+  super_chat:
+    tracking: true
+    auto_thank: true
+    highlight_threshold: 10000  # 원
+
+# ============================================
+# 품질 관리 설정
+# ============================================
+quality:
+  copyright:
+    check_before_upload: true
+    image_check: true
+    audio_check: true
+    content_id_scan: true
+    auto_replace_flagged: true
+
+  fact_check:
+    enabled: true
+    source_verification: true
+    claim_review: true
+    min_sources: 2
+
+  guidelines:
+    youtube_compliance: true
+    advertiser_friendly: true
+    age_appropriate: true
+
+  accessibility:
+    captions: true
+    audio_description: false
+    contrast_check: true
+
+  review:
+    auto_score: true
+    minimum_score: 0.8
+    human_review_threshold: 0.6
+
+  plagiarism:
+    enabled: true
+    threshold: 0.15
+
+# ============================================
+# 협업 설정
+# ============================================
+collaboration:
+  enabled: false
+
+  team:
+    roles:
+      - name: "admin"
+        permissions: ["all"]
+      - name: "editor"
+        permissions: ["edit", "upload"]
+      - name: "reviewer"
+        permissions: ["review", "comment"]
+      - name: "viewer"
+        permissions: ["view"]
+
+  workflow:
+    approval_required: true
+    review_stages: ["script", "visual", "final"]
+    auto_notify: true
+
+  notifications:
+    slack_webhook: ""
+    discord_webhook: ""
+    email_notifications: true
+
+# ============================================
+# 백업 설정
+# ============================================
+backup:
+  enabled: true
+
+  local:
+    enabled: true
+    path: "./backups"
+    retention_days: 30
+
+  cloud:
+    enabled: false
+    provider: "google_drive"  # google_drive, s3, dropbox
+    auto_sync: true
+    sync_interval: "daily"
+
+  archive:
+    enabled: true
+    compress: true
+    after_days: 90
+    format: "zip"
+
+# ============================================
+# API 설정
+# ============================================
+api:
+  # AI 모델
+  anthropic:
+    model: "claude-sonnet-4-20250514"
+    max_tokens: 8000
+    temperature: 0.7
+
+  openai:
+    model: "gpt-4o"
+    image_model: "dall-e-3"
+    tts_model: "tts-1-hd"
+    whisper_model: "whisper-1"
+
+  # 외부 서비스
+  youtube:
+    api_version: "v3"
+    quota_limit: 10000
+
+  elevenlabs:
+    model: "eleven_multilingual_v2"
+
+  stability:
+    model: "stable-diffusion-xl-1024-v1-0"
+
+  # 설정
+  timeout: 120
+  max_retries: 3
+  rate_limit_delay: 1.0
+
+# ============================================
+# 로깅 설정
+# ============================================
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file:
+    enabled: true
+    path: "./logs"
+    rotation: "daily"
+    retention_days: 30
+  console:
+    enabled: true
+    color: true

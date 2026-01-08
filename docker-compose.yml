@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  video-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-video-generator
+    volumes:
+      - ./output:/app/output
+      - ./backups:/app/backups
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config/api_keys.env:/app/config/api_keys.env:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ./config/api_keys.env
+    restart: unless-stopped
+    command: ["python", "-m", "src.main", "generate", "--topic", "AI의 미래"]
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: video-gen-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  # MongoDB for project storage (optional)
+  mongodb:
+    image: mongo:7
+    container_name: video-gen-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  mongo-data:

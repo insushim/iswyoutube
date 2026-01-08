@@ -1,0 +1,37 @@
+# ============================================
+# AI Knowledge YouTube Generator - Minimal Requirements
+# Firebase + Gemini API 기반
+# ============================================
+
+# ===== AI / LLM (Gemini) =====
+google-generativeai>=0.8.0
+python-dotenv>=1.0.0
+
+# ===== Firebase =====
+firebase-admin>=7.0.0
+
+# ===== TTS / Audio (gTTS 무료) =====
+gtts>=2.5.0
+pydub>=0.25.1
+
+# ===== Video / Image =====
+moviepy>=1.0.3
+Pillow>=10.0.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8
+
+# ===== Web / API =====
+httpx>=0.24.0
+requests>=2.31.0
+
+# ===== Configuration =====
+pyyaml>=6.0.0
+pydantic>=2.0.0
+
+# ===== CLI / UI =====
+typer>=0.9.0
+rich>=13.4.0
+tqdm>=4.65.0
+
+# ===== Utilities =====
+python-dateutil>=2.8.0

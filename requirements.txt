@@ -1,0 +1,103 @@
+# ===== AI / LLM =====
+anthropic>=0.34.0
+openai>=1.40.0
+google-generativeai>=0.5.0
+langchain>=0.1.0
+langchain-anthropic>=0.1.0
+
+# ===== TTS / Audio =====
+elevenlabs>=1.0.0
+pydub>=0.25.1
+librosa>=0.10.0
+soundfile>=0.12.0
+noisereduce>=3.0.0
+pyannote.audio>=3.1.0
+
+# ===== Video / Image =====
+moviepy>=1.0.3
+Pillow>=10.0.0
+opencv-python>=4.8.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8
+ffmpeg-python>=0.2.0
+
+# ===== Data Visualization =====
+matplotlib>=3.7.0
+plotly>=5.15.0
+seaborn>=0.12.0
+bokeh>=3.2.0
+
+# ===== Web / API =====
+aiohttp>=3.8.0
+httpx>=0.24.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+selenium>=4.10.0
+playwright>=1.35.0
+
+# ===== YouTube API =====
+google-api-python-client>=2.90.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.1.0
+
+# ===== Database =====
+sqlalchemy>=2.0.0
+alembic>=1.11.0
+redis>=4.6.0
+motor>=3.2.0
+
+# ===== Configuration =====
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# ===== CLI / UI =====
+typer>=0.9.0
+rich>=13.4.0
+tqdm>=4.65.0
+click>=8.1.0
+
+# ===== Testing =====
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+
+# ===== Utilities =====
+python-dateutil>=2.8.0
+pytz>=2023.3
+tenacity>=8.2.0
+backoff>=2.2.0
+cachetools>=5.3.0
+async-lru>=2.0.0
+
+# ===== NLP =====
+spacy>=3.6.0
+nltk>=3.8.0
+textblob>=0.17.0
+transformers>=4.30.0
+
+# ===== Image Generation =====
+stability-sdk>=0.8.0
+replicate>=0.11.0
+
+# ===== Social Media =====
+tweepy>=4.14.0
+instagrapi>=2.0.0
+
+# ===== Monitoring =====
+sentry-sdk>=1.28.0
+prometheus-client>=0.17.0
+
+# ===== Documentation =====
+mkdocs>=1.5.0
+mkdocs-material>=9.1.0
+
+# ===== Development =====
+black>=23.7.0
+isort>=5.12.0
+flake8>=6.1.0
+mypy>=1.4.0
+pre-commit>=3.3.0
