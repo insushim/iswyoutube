@@ -211,6 +211,84 @@
                         </button>
                     </div>
 
+                    <!-- 영상 제작 도구 -->
+                    <div class="mt-8 pt-6 border-t">
+                        <h3 class="font-bold text-xl mb-4 flex items-center gap-2">🎬 영상 제작 도구</h3>
+
+                        <!-- Step 4: 음성 생성 -->
+                        <div class="bg-blue-50 rounded-xl p-4 mb-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-medium text-blue-800 flex items-center gap-2">
+                                    <span>🔊</span> Step 1: 음성(TTS) 생성
+                                </h4>
+                                <select id="ttsVoice" class="px-3 py-1 border rounded-lg text-sm">
+                                    <option value="ko-KR">한국어 (기본)</option>
+                                    <option value="ko-KR-female">한국어 (여성)</option>
+                                    <option value="en-US">English</option>
+                                </select>
+                            </div>
+                            <p class="text-sm text-blue-600 mb-3">스크립트를 음성 파일로 변환합니다</p>
+                            <div class="flex gap-2">
+                                <button onclick="generateTTS()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                    <span>▶️</span> 음성 미리듣기
+                                </button>
+                                <button onclick="downloadTTS()" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">
+                                    💾 다운로드
+                                </button>
+                            </div>
+                            <div id="ttsStatus" class="mt-2 text-sm text-blue-600 hidden"></div>
+                            <audio id="ttsAudio" class="w-full mt-2 hidden" controls></audio>
+                        </div>
+
+                        <!-- Step 5: 이미지 검색 -->
+                        <div class="bg-green-50 rounded-xl p-4 mb-4">
+                            <h4 class="font-medium text-green-800 mb-3 flex items-center gap-2">
+                                <span>🖼️</span> Step 2: 이미지 준비
+                            </h4>
+                            <p class="text-sm text-green-600 mb-3">주제에 맞는 무료 이미지를 검색합니다</p>
+                            <div id="imageKeywords" class="flex flex-wrap gap-2 mb-3"></div>
+                            <button onclick="searchImages()" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2">
+                                <span>🔍</span> Unsplash에서 이미지 검색
+                            </button>
+                            <div id="imageResults" class="grid grid-cols-3 gap-2 mt-3 hidden"></div>
+                        </div>
+
+                        <!-- Step 6: 영상 편집 가이드 -->
+                        <div class="bg-purple-50 rounded-xl p-4 mb-4">
+                            <h4 class="font-medium text-purple-800 mb-3 flex items-center gap-2">
+                                <span>🎥</span> Step 3: 영상 편집
+                            </h4>
+                            <p class="text-sm text-purple-600 mb-3">아래 도구로 영상을 만드세요</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <a href="https://www.canva.com/video-editor/" target="_blank" class="p-3 bg-white rounded-lg text-center hover:shadow-md transition">
+                                    <div class="text-2xl mb-1">🎨</div>
+                                    <div class="text-sm font-medium">Canva</div>
+                                    <div class="text-xs text-gray-500">무료, 초보자용</div>
+                                </a>
+                                <a href="https://www.capcut.com/" target="_blank" class="p-3 bg-white rounded-lg text-center hover:shadow-md transition">
+                                    <div class="text-2xl mb-1">✂️</div>
+                                    <div class="text-sm font-medium">CapCut</div>
+                                    <div class="text-xs text-gray-500">무료, AI 기능</div>
+                                </a>
+                                <a href="https://clipchamp.com/" target="_blank" class="p-3 bg-white rounded-lg text-center hover:shadow-md transition">
+                                    <div class="text-2xl mb-1">🎬</div>
+                                    <div class="text-sm font-medium">Clipchamp</div>
+                                    <div class="text-xs text-gray-500">MS 무료</div>
+                                </a>
+                                <a href="https://www.veed.io/" target="_blank" class="p-3 bg-white rounded-lg text-center hover:shadow-md transition">
+                                    <div class="text-2xl mb-1">⚡</div>
+                                    <div class="text-sm font-medium">VEED</div>
+                                    <div class="text-xs text-gray-500">웹 기반</div>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- 전체 다운로드 -->
+                        <button onclick="downloadAll()" class="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:opacity-90 transition flex items-center justify-center gap-2">
+                            <span>📦</span> 전체 자료 다운로드 (스크립트 + 이미지 링크)
+                        </button>
+                    </div>
+
                     <div class="mt-6 pt-6 border-t">
                         <button onclick="startOver()" class="w-full px-6 py-3 border-2 border-purple-300 text-purple-700 rounded-xl font-medium hover:bg-purple-50 transition">
                             🔄 새로운 영상 만들기
@@ -643,6 +721,191 @@
             navigator.clipboard.writeText(text);
             alert('복사되었습니다!');
         }
+
+        // ========== 영상 제작 도구 ==========
+
+        // TTS 음성 생성 (Web Speech API)
+        let currentUtterance = null;
+
+        function generateTTS() {
+            if (!currentScript || !currentScript.full_script) {
+                alert('먼저 스크립트를 생성해주세요.');
+                return;
+            }
+
+            // 기존 음성 중지
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+
+            const statusEl = document.getElementById('ttsStatus');
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = '🔊 음성을 생성하고 있습니다...';
+
+            const text = currentScript.full_script;
+            const voiceSelect = document.getElementById('ttsVoice').value;
+
+            currentUtterance = new SpeechSynthesisUtterance(text);
+
+            // 음성 설정
+            const voices = speechSynthesis.getVoices();
+            let selectedVoice = voices.find(v => v.lang.startsWith('ko'));
+
+            if (voiceSelect === 'en-US') {
+                selectedVoice = voices.find(v => v.lang.startsWith('en'));
+            }
+
+            if (selectedVoice) {
+                currentUtterance.voice = selectedVoice;
+            }
+
+            currentUtterance.lang = voiceSelect.startsWith('ko') ? 'ko-KR' : 'en-US';
+            currentUtterance.rate = 1.0;
+            currentUtterance.pitch = 1.0;
+
+            currentUtterance.onstart = () => {
+                statusEl.textContent = '▶️ 재생 중... (클릭하면 중지)';
+                statusEl.onclick = () => speechSynthesis.cancel();
+            };
+
+            currentUtterance.onend = () => {
+                statusEl.textContent = '✅ 재생 완료!';
+                statusEl.onclick = null;
+            };
+
+            currentUtterance.onerror = (e) => {
+                statusEl.textContent = '❌ 오류: ' + e.error;
+            };
+
+            speechSynthesis.speak(currentUtterance);
+        }
+
+        // TTS 다운로드 안내
+        function downloadTTS() {
+            alert('💡 TTS 다운로드 방법:\n\n' +
+                '1. 무료 TTS 사이트 이용:\n' +
+                '   - ttsfree.com\n' +
+                '   - ttsmaker.com\n' +
+                '   - naturalreaders.com\n\n' +
+                '2. 스크립트를 복사해서 붙여넣기\n' +
+                '3. MP3로 다운로드\n\n' +
+                '또는 네이버 클로바, 카카오 TTS 사용 추천!');
+
+            // 스크립트 자동 복사
+            navigator.clipboard.writeText(currentScript.full_script);
+        }
+
+        // 이미지 검색
+        function searchImages() {
+            if (!currentScript) {
+                alert('먼저 스크립트를 생성해주세요.');
+                return;
+            }
+
+            const topic = currentScript.settings?.topic || selectedTopic?.title || '';
+            const keywords = extractKeywords(topic);
+
+            // Unsplash 검색 URL 열기
+            const searchQuery = encodeURIComponent(keywords.join(' '));
+            window.open(`https://unsplash.com/s/photos/${searchQuery}`, '_blank');
+
+            // 이미지 결과 표시
+            const resultsEl = document.getElementById('imageResults');
+            resultsEl.classList.remove('hidden');
+            resultsEl.innerHTML = keywords.map(kw =>
+                `<a href="https://unsplash.com/s/photos/${encodeURIComponent(kw)}" target="_blank"
+                    class="aspect-square bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition text-center p-2">
+                    <span class="text-xs text-gray-600">${kw}</span>
+                </a>`
+            ).join('');
+        }
+
+        // 키워드 추출
+        function extractKeywords(topic) {
+            // 간단한 키워드 추출
+            const words = topic.replace(/[^가-힣a-zA-Z0-9\s]/g, '').split(/\s+/);
+            const stopWords = ['의', '를', '을', '이', '가', '은', '는', 'TOP', '위한', '하는', '있는', '방법'];
+            return words.filter(w => w.length > 1 && !stopWords.includes(w)).slice(0, 6);
+        }
+
+        // 전체 다운로드
+        function downloadAll() {
+            if (!currentScript) {
+                alert('먼저 스크립트를 생성해주세요.');
+                return;
+            }
+
+            const topic = currentScript.settings?.topic || '영상';
+            const keywords = extractKeywords(topic);
+
+            const content = `
+================================================================================
+🎬 AI 유튜브 영상 자료
+================================================================================
+
+📌 제목 옵션:
+${currentScript.titles?.map((t, i) => `${i + 1}. ${t}`).join('\n') || topic}
+
+================================================================================
+
+🎯 오프닝 후크:
+${currentScript.hooks?.map(h => `"${h}"`).join('\n') || ''}
+
+================================================================================
+
+📜 전체 스크립트:
+
+${currentScript.full_script || ''}
+
+================================================================================
+
+📌 핵심 포인트:
+${currentScript.key_points?.map((p, i) => `${i + 1}. ${p}`).join('\n') || ''}
+
+================================================================================
+
+🖼️ 이미지 검색 링크:
+${keywords.map(kw => `- ${kw}: https://unsplash.com/s/photos/${encodeURIComponent(kw)}`).join('\n')}
+
+================================================================================
+
+🎥 추천 영상 편집 도구:
+- Canva (무료): https://www.canva.com/video-editor/
+- CapCut (무료): https://www.capcut.com/
+- Clipchamp (MS 무료): https://clipchamp.com/
+- VEED (웹 기반): https://www.veed.io/
+
+🔊 무료 TTS 사이트:
+- https://ttsfree.com
+- https://ttsmaker.com
+- https://naturalreaders.com
+
+================================================================================
+생성 일시: ${new Date().toLocaleString('ko-KR')}
+================================================================================
+`;
+
+            // 파일 다운로드
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `유튜브_영상_자료_${topic.slice(0, 20)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('✅ 자료가 다운로드되었습니다!\n\n다운로드된 파일에서 이미지 검색 링크와 TTS 사이트를 확인하세요.');
+        }
+
+        // 음성 목록 로드 (페이지 로드 시)
+        if ('speechSynthesis' in window) {
+            speechSynthesis.onvoiceschanged = () => {
+                const voices = speechSynthesis.getVoices();
+                console.log('Available voices:', voices.filter(v => v.lang.startsWith('ko') || v.lang.startsWith('en')).map(v => v.name));
+            };
+        }
+
+        // ========== 기존 함수들 ==========
 
         // 프로젝트 저장
         async function saveProject() {
