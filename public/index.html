@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Knowledge YouTube Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <header class="gradient-bg text-white py-6 px-4 shadow-lg">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-bold">🎬 AI Knowledge YouTube Generator</h1>
+            <p class="text-purple-200 mt-2">Firebase + Gemini 기반 자동 영상 생성 시스템</p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto py-8 px-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="card p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">✓</div>
+                    <div class="ml-4">
+                        <p class="text-gray-500 text-sm">시스템 상태</p>
+                        <p class="text-2xl font-bold text-green-600">정상</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">🎬</div>
+                    <div class="ml-4">
+                        <p class="text-gray-500 text-sm">생성된 영상</p>
+                        <p class="text-2xl font-bold text-blue-600" id="videoCount">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">🔗</div>
+                    <div class="ml-4">
+                        <p class="text-gray-500 text-sm">API 연결</p>
+                        <p class="text-2xl font-bold text-purple-600">Gemini</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📝 새 영상 생성</h2>
+            <form id="generateForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">주제</label>
+                        <input type="text" id="topic" class="w-full px-4 py-2 border rounded-lg" placeholder="예: 로마 제국의 멸망" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">카테고리</label>
+                        <select id="category" class="w-full px-4 py-2 border rounded-lg">
+                            <option value="history">역사</option>
+                            <option value="science">과학</option>
+                            <option value="economy">경제</option>
+                            <option value="technology">기술</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">스타일</label>
+                        <select id="style" class="w-full px-4 py-2 border rounded-lg">
+                            <option value="kurzgesagt">Kurzgesagt</option>
+                            <option value="knowledge_pirate">지식해적단</option>
+                            <option value="veritasium">Veritasium</option>
+                            <option value="infographic">인포그래픽</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">언어</label>
+                        <select id="language" class="w-full px-4 py-2 border rounded-lg">
+                            <option value="ko">한국어</option>
+                            <option value="en">English</option>
+                            <option value="ja">日本語</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="gradient-bg text-white px-8 py-3 rounded-lg font-medium hover:opacity-90">
+                    🚀 영상 생성 시작
+                </button>
+            </form>
+        </div>
+
+        <div class="card p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📂 최근 프로젝트</h2>
+            <div id="projectList" class="space-y-3">
+                <p class="text-gray-500">프로젝트가 없습니다. 새 영상을 생성해보세요!</p>
+            </div>
+        </div>
+
+        <div class="card p-6 mt-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">💻 CLI 사용법</h2>
+            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
+                <p># 영상 생성</p>
+                <p>run.bat generate --topic "로마 제국의 멸망" --category history</p>
+                <p class="mt-2"># 시리즈 생성</p>
+                <p>run.bat series --topic "한국 역사" --episodes 10</p>
+                <p class="mt-2"># 주제 추천</p>
+                <p>run.bat suggest --category science --count 10</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-gray-400 py-6 mt-8">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p>AI Knowledge YouTube Generator v2.0</p>
+            <p class="text-sm mt-1">Firebase + Gemini API 기반</p>
+        </div>
+    </footer>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6sH9sNQs7rCuau0m0u3mwG9p9p4kfYOA",
+            authDomain: "tts-pro-80ebc.firebaseapp.com",
+            projectId: "tts-pro-80ebc",
+            storageBucket: "tts-pro-80ebc.firebasestorage.app",
+            messagingSenderId: "567421649132",
+            appId: "1:567421649132:web:5f5d04c501b0bec26125c9"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function loadProjects() {
+            try {
+                const snapshot = await db.collection('projects').orderBy('createdAt', 'desc').limit(10).get();
+                const projectList = document.getElementById('projectList');
+
+                if (snapshot.empty) {
+                    projectList.innerHTML = '<p class="text-gray-500">프로젝트가 없습니다.</p>';
+                    return;
+                }
+
+                projectList.innerHTML = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return '<div class="p-4 bg-gray-50 rounded-lg"><h3 class="font-medium">' + (data.topic || 'Untitled') + '</h3><p class="text-sm text-gray-500">' + (data.category || '') + '</p></div>';
+                }).join('');
+
+                document.getElementById('videoCount').textContent = snapshot.size;
+            } catch (error) {
+                console.error('Load error:', error);
+            }
+        }
+
+        document.getElementById('generateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const project = {
+                topic: document.getElementById('topic').value,
+                category: document.getElementById('category').value,
+                style: document.getElementById('style').value,
+                language: document.getElementById('language').value,
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await db.collection('projects').add(project);
+                alert('프로젝트가 생성되었습니다!');
+                document.getElementById('generateForm').reset();
+                loadProjects();
+            } catch (error) {
+                alert('오류: ' + error.message);
+            }
+        });
+
+        loadProjects();
+    </script>
+</body>
+</html>
