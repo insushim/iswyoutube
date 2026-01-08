@@ -83,7 +83,7 @@ class ScriptGenerator:
 
             if api_key:
                 genai.configure(api_key=api_key)
-                self.client = genai.GenerativeModel('gemini-2.0-flash')
+                self.client = genai.GenerativeModel('gemini-2.5-flash-preview-05-20')
             else:
                 self.client = None
         except ImportError:
