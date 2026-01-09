@@ -772,6 +772,9 @@
                 // 결과 표시
                 displayScriptResult();
 
+                // 자동 저장 (생성된 콘텐츠 자동 보관)
+                await saveProject(true);
+
             } catch (error) {
                 console.error('Error generating script:', error);
                 clearInterval(progressInterval);
@@ -1116,7 +1119,11 @@ ${otherBoundaries}
                 };
 
                 // 결과 표시
-                setTimeout(() => displaySeriesResult(), 500);
+                setTimeout(() => {
+                    displaySeriesResult();
+                    // 시리즈 자동 저장
+                    saveSeriesProject(true);
+                }, 500);
 
             } catch (error) {
                 console.error('Error generating series:', error);
@@ -1357,10 +1364,10 @@ ${ep.key_points?.map((p, i) => `${i + 1}. ${p}`).join('\n') || '-'}
             URL.revokeObjectURL(url);
         }
 
-        // 시리즈 프로젝트 저장
-        async function saveSeriesProject() {
+        // 시리즈 프로젝트 저장 (autoSave: true면 알림 없이 자동 저장)
+        async function saveSeriesProject(autoSave = false) {
             try {
-                await db.collection('projects').add({
+                const docRef = await db.collection('projects').add({
                     type: 'series',
                     series_title: currentSeries.series_title,
                     topic: currentSeries.settings?.topic,
@@ -1371,11 +1378,21 @@ ${ep.key_points?.map((p, i) => `${i + 1}. ${p}`).join('\n') || '-'}
                     status: 'series_complete',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                alert('시리즈가 저장되었습니다!');
+
+                currentSeries.projectId = docRef.id;
+
+                if (autoSave) {
+                    console.log('✅ 시리즈 자동 저장 완료:', docRef.id);
+                    showToast('시리즈 자동 저장됨 ✓');
+                } else {
+                    alert('시리즈가 저장되었습니다!');
+                }
                 loadRecentProjects();
             } catch (error) {
                 console.error('Error saving series:', error);
-                alert('저장에 실패했습니다: ' + error.message);
+                if (!autoSave) {
+                    alert('저장에 실패했습니다: ' + error.message);
+                }
             }
         }
 
@@ -1564,10 +1581,10 @@ ${keywords.map(kw => `- ${kw}: https://unsplash.com/s/photos/${encodeURIComponen
 
         // ========== 기존 함수들 ==========
 
-        // 프로젝트 저장
-        async function saveProject() {
+        // 프로젝트 저장 (autoSave: true면 알림 없이 자동 저장)
+        async function saveProject(autoSave = false) {
             try {
-                await db.collection('projects').add({
+                const docRef = await db.collection('projects').add({
                     topic: currentScript.settings.topic,
                     category: currentScript.settings.category,
                     style: currentScript.settings.style,
@@ -1578,12 +1595,38 @@ ${keywords.map(kw => `- ${kw}: https://unsplash.com/s/photos/${encodeURIComponen
                     status: 'script_complete',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                alert('프로젝트가 저장되었습니다!');
+
+                // 현재 프로젝트 ID 저장 (나중에 업데이트용)
+                currentScript.projectId = docRef.id;
+
+                if (autoSave) {
+                    console.log('✅ 자동 저장 완료:', docRef.id);
+                    // 작은 토스트 알림 표시
+                    showToast('자동 저장됨 ✓');
+                } else {
+                    alert('프로젝트가 저장되었습니다!');
+                }
                 loadRecentProjects();
             } catch (error) {
                 console.error('Error saving project:', error);
-                alert('저장에 실패했습니다: ' + error.message);
+                if (!autoSave) {
+                    alert('저장에 실패했습니다: ' + error.message);
+                }
             }
+        }
+
+        // 토스트 알림 표시
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
         }
 
         // 최근 프로젝트 로드
