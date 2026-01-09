@@ -19,7 +19,13 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
         .tag-high { background: #dcfce7; color: #166534; }
+        .tag-medium-high { background: #dbeafe; color: #1e40af; }
         .tag-medium { background: #fef9c3; color: #854d0e; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-bounce { animation: bounce 1s infinite; }
         .step-indicator { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
         .step { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .step.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
@@ -63,13 +69,13 @@
             <div class="card p-6 mb-6">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <span class="text-3xl">💡</span> AI 추천 주제
+                        <span class="text-3xl">🔥</span> 지금 뜨는 주제
                     </h2>
-                    <button onclick="getNewTopics()" class="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition">
-                        <span>🔄</span> 새로운 추천
+                    <button onclick="getNewTopics()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg hover:opacity-90 transition shadow-md">
+                        <span>✨</span> AI 트렌드 분석
                     </button>
                 </div>
-                <p class="text-gray-600 mb-4">조회수가 잘 나오는 주제를 AI가 추천해드려요. 클릭해서 선택하세요!</p>
+                <p class="text-gray-600 mb-4">AI가 실시간 트렌드를 분석해서 조회수 잘 나올 주제를 추천해드려요. <span class="text-red-500 font-medium">🔥 HOT</span> 표시된 주제가 특히 인기!</p>
 
                 <div id="topicsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Topics will be loaded here -->
@@ -168,6 +174,8 @@
                             <option value="mystery">🔮 미스터리</option>
                             <option value="health">💪 건강</option>
                             <option value="lifestyle">🌟 라이프스타일</option>
+                            <option value="current_affairs">📰 시사/이슈</option>
+                            <option value="self_improvement">📈 자기계발</option>
                         </select>
                     </div>
                     <div>
@@ -499,14 +507,19 @@
                 let html = '';
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    const potentialClass = data.potential === '상' ? 'tag-high' : 'tag-medium';
+                    const potentialClass = data.potential === '상' ? 'tag-high' : (data.potential === '중상' ? 'tag-medium-high' : 'tag-medium');
+                    const isHot = data.is_hot === true;
+                    const trendingReason = data.trending_reason || '';
+
                     html += `
-                        <div class="topic-card p-4 border-2 border-gray-200 rounded-xl" onclick="selectTopic('${data.title}', '${data.category}')">
+                        <div class="topic-card p-4 border-2 ${isHot ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-xl relative overflow-hidden" onclick="selectTopic('${data.title.replace(/'/g, "\\'")}', '${data.category}')">
+                            ${isHot ? '<div class="absolute top-0 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded-bl-lg font-bold">🔥 HOT</div>' : ''}
                             <div class="flex justify-between items-start mb-2">
                                 <span class="tag ${potentialClass}">조회수 ${data.potential}</span>
                                 <span class="text-gray-400 text-sm">${data.category || ''}</span>
                             </div>
-                            <p class="font-medium text-gray-800">${data.title}</p>
+                            <p class="font-medium text-gray-800 ${isHot ? 'text-red-700' : ''}">${data.title}</p>
+                            ${trendingReason ? `<p class="text-xs text-gray-500 mt-2 flex items-center gap-1"><span>📈</span> ${trendingReason}</p>` : ''}
                         </div>
                     `;
                 });
@@ -517,30 +530,50 @@
             }
         }
 
-        // 새로운 추천 주제 생성
+        // 새로운 추천 주제 생성 (트렌드 기반)
         async function getNewTopics() {
             const grid = document.getElementById('topicsGrid');
             grid.innerHTML = `
                 <div class="loading text-center py-8 col-span-2">
-                    <div class="text-4xl mb-2">🤖</div>
-                    <p class="text-gray-500">AI가 새로운 주제를 추천하고 있어요...</p>
+                    <div class="text-4xl mb-2 animate-bounce">🔥</div>
+                    <p class="text-gray-500">AI가 최신 트렌드를 분석하고 있어요...</p>
+                    <p class="text-gray-400 text-sm mt-2">인기 주제를 추천해 드릴게요</p>
                 </div>
             `;
 
-            const prompt = `유튜브에서 조회수가 잘 나오는 지식/정보 콘텐츠 주제 10개를 추천해줘.
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월`;
+
+            const prompt = `당신은 유튜브 트렌드 분석 전문가입니다. ${dateStr} 현재 한국에서 인기 있거나 곧 뜨게 될 유튜브 지식/정보 콘텐츠 주제 10개를 추천해주세요.
 
 다음 JSON 형식으로만 응답해:
 {
   "topics": [
-    {"title": "주제 제목", "category": "카테고리", "potential": "상/중상/중"}
+    {
+      "title": "흥미로운 주제 제목 (클릭하고 싶게)",
+      "category": "카테고리",
+      "potential": "상/중상/중",
+      "trending_reason": "왜 지금 이 주제가 뜨는지 한 줄 설명",
+      "is_hot": true/false
+    }
   ]
 }
 
 조건:
 - 한국 시청자 대상
-- 흥미를 유발하는 제목
-- 카테고리: 기술/AI, 재테크, 역사, 과학, 미스터리, 건강, 심리학 중 택1
-- potential은 예상 조회수 잠재력`;
+- 최근 뉴스, 이슈, 시즌에 맞는 주제 우선
+- 검색량이 높거나 관심도가 상승 중인 주제
+- 카테고리: 기술/AI, 재테크, 역사, 과학, 미스터리, 건강, 심리학, 시사/이슈, 자기계발 중 택1
+- is_hot: 특히 지금 핫한 주제는 true
+- potential: 예상 조회수 잠재력
+- 상위 3개는 반드시 is_hot: true로 설정
+
+추천 방향:
+1. 최근 화제가 된 뉴스/이슈와 연관된 지식
+2. 계절/시즌에 맞는 주제 (예: 연말정산, 여름 건강 등)
+3. 새로 출시된 기술/서비스 관련
+4. 논쟁이 되고 있는 사회 이슈
+5. 영원히 인기 있는 돈/건강/자기계발 주제`;
 
             try {
                 const result = await callGeminiAPI(prompt, { temperature: 0.9 });
@@ -606,7 +639,9 @@
                 '과학': 'science',
                 '미스터리': 'mystery',
                 '건강': 'health',
-                '심리학': 'lifestyle'
+                '심리학': 'lifestyle',
+                '시사/이슈': 'current_affairs',
+                '자기계발': 'self_improvement'
             };
             if (categoryMap[category]) {
                 document.getElementById('category').value = categoryMap[category];
