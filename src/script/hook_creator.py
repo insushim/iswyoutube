@@ -19,15 +19,15 @@ class Hook:
 
 
 class HookCreator:
-    """후크 생성기"""
+    """후크 생성기 - Gemini API 사용"""
 
     HOOK_TYPES = {
-        "question": "의문을 유발하는 질문",
-        "statistic": "충격적인 통계/숫자",
-        "story": "짧은 스토리/일화",
-        "contrast": "의외의 대비/반전",
+        "question": "진짜 궁금해지는 질문",
+        "story": "짧은 일화나 에피소드",
+        "shock": "에?! 하게 만드는 사실",
+        "contrast": "예상과 다른 반전",
+        "confession": "솔직한 고백/인정",
         "promise": "가치 약속/혜택 제시",
-        "mystery": "미스터리/수수께끼",
     }
 
     def __init__(self, config: Dict):
@@ -36,10 +36,18 @@ class HookCreator:
         self._init_client()
 
     def _init_client(self):
-        """AI 클라이언트 초기화"""
+        """AI 클라이언트 초기화 - Gemini 사용"""
         try:
-            from anthropic import Anthropic
-            self.client = Anthropic()
+            import os
+            import google.generativeai as genai
+            from dotenv import load_dotenv
+
+            load_dotenv('config/api_keys.env')
+            api_key = os.getenv('GEMINI_API_KEY')
+
+            if api_key:
+                genai.configure(api_key=api_key)
+                self.client = genai.GenerativeModel('gemini-3-flash')
         except ImportError:
             pass
 
@@ -63,39 +71,50 @@ class HookCreator:
         if not self.client:
             return self._generate_fallback_hooks(topic, count)
 
-        prompt = f""""{topic}" 주제의 유튜브 영상 오프닝 후크 {count}개를 생성하세요.
-
+        prompt = f"""유튜브 영상의 오프닝 후크 {count}개를 만들어주세요.
+주제: {topic}
 스타일: {style}
 
-후크 유형 사용:
-- question: 의문을 유발하는 질문
-- statistic: 충격적인 통계
-- story: 짧은 스토리
-- contrast: 의외의 대비
-- promise: 가치 약속
+[중요] AI가 쓴 것 같은 뻔한 후크 말고, 실제 인기 유튜버들이 쓸 법한 자연스러운 후크를 만들어주세요.
 
-각 후크는 15초 이내로 읽을 수 있어야 합니다.
+좋은 후크 예시:
+- "솔직히 저도 이거 처음 들었을 때 '에이 설마' 했거든요"
+- "자 여러분, 오늘 제가 충격적인 걸 발견했어요"
+- "근데 이게 진짜 소름 돋는 게..."
+- "아 이거 진짜 알면 인생이 바뀌어요"
+
+피해야 할 후크 (너무 뻔함):
+- "오늘은 ~에 대해 알아보겠습니다"
+- "~가 궁금하신 적 있으신가요?"
+- "여러분은 ~을 알고 계셨나요?"
+
+후크 유형을 다양하게:
+- question: 진짜 궁금해지는 질문 (뻔한 질문 X)
+- story: 짧은 일화나 에피소드로 시작
+- shock: "에?!" 하게 만드는 사실
+- contrast: 예상과 다른 반전
+- confession: 솔직한 고백/인정
+
+각 후크는 10-15초 안에 말할 수 있어야 해요.
 
 JSON 배열로 응답:
 [
     {{
-        "text": "후크 텍스트",
-        "hook_type": "question",
-        "predicted_retention": 0.8,
-        "visual_suggestion": "비주얼 제안"
+        "text": "후크 텍스트 (자연스러운 말투로)",
+        "hook_type": "유형",
+        "predicted_retention": 0.7~0.95 사이,
+        "visual_suggestion": "어울리는 화면"
     }}
 ]"""
 
         try:
-            response = self.client.messages.create(
-                model=self.config.get('api', {}).get('anthropic', {}).get('model', 'claude-sonnet-4-20250514'),
-                max_tokens=1500,
-                messages=[{"role": "user", "content": prompt}]
-            )
+            response = self.client.generate_content(prompt)
+            text = response.text
 
-            text = response.content[0].text
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0]
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0]
 
             hooks_data = json.loads(text.strip())
 
@@ -108,27 +127,32 @@ JSON 배열로 응답:
                 )
                 for h in hooks_data
             ]
-        except Exception:
+        except Exception as e:
+            print(f"Hook generation error: {e}")
             return self._generate_fallback_hooks(topic, count)
 
     def _generate_fallback_hooks(self, topic: str, count: int) -> List[Hook]:
-        """폴백 후크 생성"""
+        """폴백 후크 생성 - 자연스러운 말투로"""
         templates = [
-            (f"왜 {topic}에 대해 아무도 진실을 말하지 않을까요?", "question"),
-            (f"{topic}의 충격적인 진실, 알고 계셨나요?", "mystery"),
-            (f"99%의 사람들이 {topic}에 대해 잘못 알고 있습니다.", "statistic"),
-            (f"{topic}을 이해하면 세상이 다르게 보입니다.", "promise"),
-            (f"역사상 가장 흥미로운 {topic} 이야기를 해드릴게요.", "story"),
+            (f"솔직히 {topic} 이거 저도 처음 들었을 때 '에이 설마' 했거든요", "confession", 0.85),
+            (f"자, 오늘 제가 {topic}에 대해서 진짜 충격적인 걸 발견했어요", "shock", 0.82),
+            (f"근데 {topic} 이야기 하다 보면요, 진짜 소름 돋는 부분이 있어요", "story", 0.80),
+            (f"여러분 혹시 {topic} 관련해서 이런 경험 있으세요?", "question", 0.78),
+            (f"아 {topic} 이거 알고 나면요, 진짜 세상이 다르게 보여요", "promise", 0.75),
+            (f"제가 {topic} 조사하다가 깜짝 놀랐는데요", "story", 0.77),
         ]
+
+        import random
+        selected = random.sample(templates[:min(len(templates), count+2)], min(count, len(templates)))
 
         return [
             Hook(
                 text=t[0],
                 hook_type=t[1],
-                predicted_retention=0.7,
-                visual_suggestion=f"{topic} 관련 드라마틱한 이미지"
+                predicted_retention=t[2],
+                visual_suggestion=f"{topic} 관련 흥미로운 장면"
             )
-            for t in templates[:count]
+            for t in selected
         ]
 
     async def rank_hooks(self, hooks: List[Hook]) -> List[Hook]:

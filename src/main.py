@@ -30,9 +30,103 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 import uuid
+import re
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
+
+
+# ============================================
+# Gemini AI Client
+# ============================================
+
+class GeminiClient:
+    """Gemini AI 클라이언트 - 환경변수에서 안전하게 키 로드"""
+
+    def __init__(self, config: Dict = None):
+        self.config = config or {}
+        self.model = None
+        self._initialized = False
+        self._init_client()
+
+    def _init_client(self):
+        """클라이언트 초기화 - 환경변수에서 키 로드"""
+        try:
+            import google.generativeai as genai
+
+            # 환경변수에서 API 키 로드 (코드에 키 노출 방지)
+            api_key = os.environ.get('GEMINI_API_KEY')
+            if not api_key:
+                raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았습니다")
+
+            genai.configure(api_key=api_key)
+
+            model_name = self.config.get('api', {}).get('gemini', {}).get('model', 'gemini-3-flash')
+            self.model = genai.GenerativeModel(model_name)
+            self._initialized = True
+
+        except ImportError:
+            logging.warning("google-generativeai 패키지가 설치되지 않았습니다. pip install google-generativeai")
+        except Exception as e:
+            logging.warning(f"Gemini 초기화 실패: {e}")
+
+    def generate(self, prompt: str, max_tokens: int = 8000) -> str:
+        """텍스트 생성"""
+        if not self._initialized or not self.model:
+            raise RuntimeError("Gemini 클라이언트가 초기화되지 않았습니다")
+
+        generation_config = {
+            "max_output_tokens": max_tokens,
+            "temperature": self.config.get('api', {}).get('gemini', {}).get('temperature', 0.7),
+        }
+
+        response = self.model.generate_content(prompt, generation_config=generation_config)
+        return response.text
+
+    @property
+    def is_available(self) -> bool:
+        return self._initialized and self.model is not None
+
+
+def parse_json_response(text: str) -> Any:
+    """JSON 응답 파싱 - 여러 형식 지원"""
+    # 마크다운 코드 블록 제거
+    if "```json" in text:
+        text = text.split("```json")[1].split("```")[0]
+    elif "```" in text:
+        text = text.split("```")[1].split("```")[0]
+
+    # JSON 배열/객체 추출
+    text = text.strip()
+
+    # JSON 시작점 찾기
+    json_start = -1
+    for i, char in enumerate(text):
+        if char in '[{':
+            json_start = i
+            break
+
+    if json_start > 0:
+        text = text[json_start:]
+
+    # JSON 끝점 찾기
+    bracket_count = 0
+    json_end = len(text)
+    start_char = text[0] if text else '{'
+    end_char = ']' if start_char == '[' else '}'
+
+    for i, char in enumerate(text):
+        if char == start_char:
+            bracket_count += 1
+        elif char == end_char:
+            bracket_count -= 1
+            if bracket_count == 0:
+                json_end = i + 1
+                break
+
+    text = text[:json_end]
+
+    return json.loads(text)
 
 
 # ============================================
@@ -425,6 +519,7 @@ class VideoGenerator:
         self.components = {}
         self._load_env_keys()
         self._initialize_components()
+        self._init_gemini()
 
     def _load_config(self, config_path: str) -> Dict:
         """설정 파일 로드"""
@@ -596,6 +691,42 @@ class VideoGenerator:
             self.components[name] = None  # Will be lazy-loaded when needed
 
         self.logger.info("모든 컴포넌트 초기화 완료")
+
+    def _init_gemini(self):
+        """Gemini 클라이언트 초기화"""
+        try:
+            self.gemini = GeminiClient(self.config)
+            if self.gemini.is_available:
+                self.logger.info("Gemini 2.0 Flash 초기화 완료")
+            else:
+                self.logger.warning("Gemini 초기화 실패 - Anthropic으로 폴백")
+                self.gemini = None
+        except Exception as e:
+            self.logger.warning(f"Gemini 초기화 실패: {e}")
+            self.gemini = None
+
+    def _generate_with_ai(self, prompt: str, max_tokens: int = 8000) -> str:
+        """AI 텍스트 생성 - Gemini 우선, Anthropic 폴백"""
+        # Gemini 우선 시도
+        if self.gemini and self.gemini.is_available:
+            try:
+                return self.gemini.generate(prompt, max_tokens)
+            except Exception as e:
+                self.logger.warning(f"Gemini 생성 실패, Anthropic으로 폴백: {e}")
+
+        # Anthropic 폴백
+        try:
+            from anthropic import Anthropic
+            client = Anthropic()
+            response = client.messages.create(
+                model=self.config.get('api', {}).get('anthropic', {}).get('model', 'claude-sonnet-4-20250514'),
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text
+        except Exception as e:
+            self.logger.error(f"AI 생성 실패: {e}")
+            raise
 
     # ============================================
     # 메인 생성 메서드
@@ -777,15 +908,6 @@ class VideoGenerator:
         """Phase 1: 리서치 및 자료 수집"""
         self.logger.info("Phase 1: 리서치 시작...")
 
-        try:
-            from anthropic import Anthropic
-            client = Anthropic()
-        except ImportError:
-            self.logger.warning("Anthropic not installed, using mock research")
-            project.title = f"{project.topic} - 완전 정복"
-            project.research.suggested_titles = [project.title]
-            return project
-
         # 1. 제목 생성
         titles_prompt = f"""유튜브 지식 채널용 "{project.topic}" 주제의 클릭율 높은 제목 5개를 생성하세요.
 
@@ -805,19 +927,8 @@ JSON 배열로 응답:
 ]"""
 
         try:
-            response = client.messages.create(
-                model=self.config['api']['anthropic']['model'],
-                max_tokens=2000,
-                messages=[{"role": "user", "content": titles_prompt}]
-            )
-
-            text = response.content[0].text
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0]
-            elif "```" in text:
-                text = text.split("```")[1].split("```")[0]
-
-            titles_data = json.loads(text.strip())
+            text = self._generate_with_ai(titles_prompt, max_tokens=2000)
+            titles_data = parse_json_response(text)
             project.research.suggested_titles = [t['title'] for t in titles_data]
             project.title = titles_data[0]['title']
         except Exception as e:
@@ -846,15 +957,6 @@ JSON 배열로 응답:
     async def _phase_script(self, project: VideoProject) -> VideoProject:
         """Phase 2: 스크립트 생성"""
         self.logger.info("Phase 2: 스크립트 생성 시작...")
-
-        try:
-            from anthropic import Anthropic
-            client = Anthropic()
-        except ImportError:
-            self.logger.warning("Anthropic not installed, using mock script")
-            project.script.full_script = f"이것은 {project.topic}에 대한 영상입니다."
-            project.script.segments = [{"id": 1, "text": project.script.full_script, "duration": project.duration_target}]
-            return project
 
         # 스타일별 프롬프트 조정
         style_instructions = {
@@ -930,19 +1032,8 @@ JSON 형식으로 응답:
 }}"""
 
         try:
-            response = client.messages.create(
-                model=self.config['api']['anthropic']['model'],
-                max_tokens=8000,
-                messages=[{"role": "user", "content": script_prompt}]
-            )
-
-            text = response.content[0].text
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0]
-            elif "```" in text:
-                text = text.split("```")[1].split("```")[0]
-
-            script_data = json.loads(text.strip())
+            text = self._generate_with_ai(script_prompt, max_tokens=8000)
+            script_data = parse_json_response(text)
 
             project.script.full_script = script_data.get('full_script', '')
             project.script.segments = script_data.get('segments', [])
@@ -1377,13 +1468,6 @@ JSON 형식으로 응답:
         """Phase 8: 다국어 현지화"""
         self.logger.info("Phase 8: 다국어 현지화 시작...")
 
-        try:
-            from anthropic import Anthropic
-            client = Anthropic()
-        except ImportError:
-            self.logger.warning("Anthropic not installed, skipping localization")
-            return project
-
         for lang in project.generate_localizations:
             self.logger.info(f"  - {lang.value} 현지화 중...")
 
@@ -1401,13 +1485,7 @@ JSON 형식으로 응답:
 
 번역된 스크립트만 출력:"""
 
-                response = client.messages.create(
-                    model=self.config['api']['anthropic']['model'],
-                    max_tokens=8000,
-                    messages=[{"role": "user", "content": translate_prompt}]
-                )
-
-                translated_script = response.content[0].text.strip()
+                translated_script = self._generate_with_ai(translate_prompt, max_tokens=8000).strip()
 
                 # SEO localization
                 seo_prompt = f"""다음 SEO 데이터를 {lang.value}로 현지화하세요.
@@ -1422,16 +1500,8 @@ JSON으로 응답:
     "tags": ["태그1", "태그2"]
 }}"""
 
-                seo_response = client.messages.create(
-                    model=self.config['api']['anthropic']['model'],
-                    max_tokens=1000,
-                    messages=[{"role": "user", "content": seo_prompt}]
-                )
-
-                text = seo_response.content[0].text
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0]
-                localized_seo = json.loads(text.strip())
+                seo_text = self._generate_with_ai(seo_prompt, max_tokens=1000)
+                localized_seo = parse_json_response(seo_text)
 
                 project.localizations[lang.value] = LocalizationData(
                     language=lang.value,
@@ -1450,9 +1520,6 @@ JSON으로 응답:
         self.logger.info("Phase 9: SEO 최적화 시작...")
 
         try:
-            from anthropic import Anthropic
-            client = Anthropic()
-
             seo_prompt = f"""유튜브 SEO 최적화 데이터를 생성하세요.
 
 제목: {project.title}
@@ -1469,16 +1536,8 @@ JSON으로 응답:
     "keywords": ["키워드1", "키워드2"]
 }}"""
 
-            response = client.messages.create(
-                model=self.config['api']['anthropic']['model'],
-                max_tokens=2000,
-                messages=[{"role": "user", "content": seo_prompt}]
-            )
-
-            text = response.content[0].text
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0]
-            seo_data = json.loads(text.strip())
+            text = self._generate_with_ai(seo_prompt, max_tokens=2000)
+            seo_data = parse_json_response(text)
 
             project.seo.title = seo_data.get('optimized_title', project.title)
             project.seo.description = seo_data.get('description', '')
@@ -1602,9 +1661,6 @@ JSON으로 응답:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            from anthropic import Anthropic
-            client = Anthropic()
-
             # Blog post conversion
             blog_prompt = f"""다음 유튜브 스크립트를 블로그 포스트로 변환하세요.
 
@@ -1613,13 +1669,7 @@ JSON으로 응답:
 
 형식: 마크다운, 제목/소제목 포함, 2000자 내외"""
 
-            response = client.messages.create(
-                model=self.config['api']['anthropic']['model'],
-                max_tokens=3000,
-                messages=[{"role": "user", "content": blog_prompt}]
-            )
-
-            blog_post = response.content[0].text
+            blog_post = self._generate_with_ai(blog_prompt, max_tokens=3000)
             blog_path = output_dir / "blog_post.md"
             with open(blog_path, 'w', encoding='utf-8') as f:
                 f.write(blog_post)
@@ -1635,16 +1685,8 @@ JSON으로 응답:
     "linkedin": "링크드인용"
 }}"""
 
-            snippet_response = client.messages.create(
-                model=self.config['api']['anthropic']['model'],
-                max_tokens=1000,
-                messages=[{"role": "user", "content": snippet_prompt}]
-            )
-
-            text = snippet_response.content[0].text
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0]
-            project.repurpose.social_snippets = json.loads(text.strip())
+            snippet_text = self._generate_with_ai(snippet_prompt, max_tokens=1000)
+            project.repurpose.social_snippets = parse_json_response(snippet_text)
 
             snippets_path = output_dir / "social_snippets.json"
             with open(snippets_path, 'w', encoding='utf-8') as f:
@@ -1740,9 +1782,6 @@ JSON으로 응답:
         self.logger.info(f"시리즈 생성 시작: {topic} ({episode_count}화)")
 
         try:
-            from anthropic import Anthropic
-            client = Anthropic()
-
             plan_prompt = f"""유튜브 지식 채널 시리즈를 기획하세요.
 
 대주제: {topic}
@@ -1759,16 +1798,8 @@ JSON으로 응답:
     ]
 }}"""
 
-            response = client.messages.create(
-                model=self.config['api']['anthropic']['model'],
-                max_tokens=3000,
-                messages=[{"role": "user", "content": plan_prompt}]
-            )
-
-            text = response.content[0].text
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0]
-            series_plan = json.loads(text.strip())
+            text = self._generate_with_ai(plan_prompt, max_tokens=3000)
+            series_plan = parse_json_response(text)
         except Exception as e:
             self.logger.warning(f"Series planning failed: {e}")
             series_plan = {
@@ -1945,9 +1976,6 @@ python main.py suggest --category science --count 10
 
     elif args.command == 'suggest':
         try:
-            from anthropic import Anthropic
-            client = Anthropic()
-
             prompt = f"""{args.category} 카테고리에서 유튜브 지식 채널용 인기 주제 {args.count}개를 추천하세요.
 
 각 주제에 대해:
@@ -1957,16 +1985,12 @@ python main.py suggest --category science --count 10
 
 JSON 배열로 응답."""
 
-            response = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
-            )
+            result = generator._generate_with_ai(prompt, max_tokens=2000)
 
             print("\n" + "="*60)
             print("추천 주제")
             print("="*60)
-            print(response.content[0].text)
+            print(result)
             print("="*60)
         except Exception as e:
             print(f"주제 추천 실패: {e}")

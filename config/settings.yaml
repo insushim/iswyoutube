@@ -773,7 +773,13 @@ backup:
 # API 설정
 # ============================================
 api:
-  # AI 모델
+  # AI 모델 - 기본 LLM
+  gemini:
+    model: "gemini-3-flash"
+    max_tokens: 8000
+    temperature: 0.7
+    # API 키는 환경변수 GEMINI_API_KEY에서 로드
+
   anthropic:
     model: "claude-sonnet-4-20250514"
     max_tokens: 8000
