@@ -130,3 +130,8 @@ models/
 credentials.json
 token.json
 client_secret*.json
+
+# Firebase Functions
+functions/node_modules/
+functions/.env
+functions/.env.local
